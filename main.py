@@ -8,6 +8,8 @@ from threading import Thread
 import importlib.util
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
+import datetime
+import platform
 
 class VideoStream:
     
@@ -48,10 +50,12 @@ class Firebase:
 
         self.bucket = storage.bucket()
 
-    def upload_file(self, file_path='./firebase/image.jpeg', content_type='image/jpeg'):
+    def upload_file(self, file_path='./firebase/image.jpeg', content_type='image/jpeg', meta_data={'from': platform.system()}):
         blob = self.bucket.blob(file_path.split('/')[-1])
         with open(file_path, 'rb') as f:
             blob.upload_from_file(f, content_type=content_type)
+        blob.metadata = meta_data
+        blob.patch()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -133,8 +137,9 @@ if __name__ == '__main__':
         labels_valid = labels[np.int64(classes[(scores > min_conf_threshold) & (scores <= 1.0)])]
         if 'cat' in labels_valid and 'person' in labels_valid and upload_flag:
             print('cat_and_person')
-            cv2.imwrite('./firebase/image.jpeg', frame)
-            firebase.upload_file()
+            file_name = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+            cv2.imwrite('./firebase/{}.jpeg'.format(file_name), frame)
+            firebase.upload_file(file_path='./firebase/{}.jpeg'.format(file_name))
             if IS_TEST:
                 upload_flag = False
     
