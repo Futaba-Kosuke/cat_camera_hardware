@@ -48,7 +48,10 @@ class Firebase:
         cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred, {'storageBucket': bucket_name})
 
+        self.bucket_name = bucket_name
         self.bucket = storage.bucket()
+
+        self.db = firestore.client()
 
     def upload_file(self, file_path='./firebase/image.jpeg', content_type='image/jpeg', meta_data={'from': platform.system()}):
         blob = self.bucket.blob(file_path.split('/')[-1])
@@ -56,6 +59,13 @@ class Firebase:
             blob.upload_from_file(f, content_type=content_type)
         blob.metadata = meta_data
         blob.patch()
+
+        blob.make_public()
+        url = blob.public_url
+        self.db.collection("images").add({
+            'isFavorite': True,
+            'url': url
+        })
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
