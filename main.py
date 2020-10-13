@@ -64,7 +64,8 @@ class Firebase:
         url = blob.public_url
         self.db.collection("images").add({
             'isFavorite': True,
-            'url': url
+            'url': url,
+            'postTime': datetime.datetime.now()
         })
 
 if __name__ == '__main__':
