@@ -72,18 +72,20 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--modeldir', help='model\'s path', default='models')
     parser.add_argument('--display', help='flag\'s window', default=True)
-    parser.add_argument('--test', help='is test', default=True)
+    parser.add_argument('-w', '--wait', help='waiting time [sec]', default=5)
 
     args = parser.parse_args()
     
     MODEL_NAME = args.modeldir
     IS_DISPLAY = args.display
-    IS_TEST = args.test
+    WAITING_SEC = float(args.wait)
     GRAPH_NAME = 'detect.tflite'
     LABELMAP_NAME = 'labelmap.txt'
     min_conf_threshold = float(0.5)
     imgW, imgH = 1280, 720
-    
+
+    print('WAITING_SEC: {}'.format(WAITING_SEC))
+
     pkg = importlib.util.find_spec('tflite_runtime')
     if pkg:
         from tflite_runtime.interpreter import Interpreter
@@ -125,8 +127,9 @@ if __name__ == '__main__':
     time.sleep(1)
 
     firebase = Firebase()
-    upload_flag = True
     
+    # 時間の初期値
+    prev_time = 0
     while True:
         t1 = cv2.getTickCount()
     
@@ -140,19 +143,22 @@ if __name__ == '__main__':
     
         interpreter.set_tensor(input_details[0]['index'], input_data)
         interpreter.invoke()
-    
+
         boxes = interpreter.get_tensor(output_details[0]['index'])[0]
         classes = interpreter.get_tensor(output_details[1]['index'])[0]
         scores = interpreter.get_tensor(output_details[2]['index'])[0]
     
         labels_valid = labels[np.int64(classes[(scores > min_conf_threshold) & (scores <= 1.0)])]
-        if 'cat' in labels_valid and 'person' in labels_valid and upload_flag:
+        # 現在の時間
+        now_time = time.time()
+        # 猫／人間が含まれている ∧ 前回の撮影からWAITING_SECだけ時間が経過している
+        if ('cat' in labels_valid) and ('person' in labels_valid) and (now_time - prev_time > WAITING_SEC):
             print('cat_and_person')
             file_name = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
             cv2.imwrite('./firebase/{}.jpeg'.format(file_name), frame)
             Thread(target=firebase.upload_file, kwargs={ 'file_path': './firebase/{}.jpeg'.format(file_name) }).start()
-            if IS_TEST:
-                upload_flag = False
+            # 時間の更新
+            prev_time = now_time
     
         if IS_DISPLAY:
             for i in range(len(scores)):
