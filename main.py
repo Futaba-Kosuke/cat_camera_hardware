@@ -150,7 +150,7 @@ if __name__ == '__main__':
             print('cat_and_person')
             file_name = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
             cv2.imwrite('./firebase/{}.jpeg'.format(file_name), frame)
-            firebase.upload_file(file_path='./firebase/{}.jpeg'.format(file_name))
+            Thread(target=firebase.upload_file, kwargs={ 'file_path': './firebase/{}.jpeg'.format(file_name) }).start()
             if IS_TEST:
                 upload_flag = False
     
