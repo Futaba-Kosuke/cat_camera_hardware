@@ -1,4 +1,4 @@
-# cat_camera_hardwareo
+# cat_camera_hardware
 
 ## How to setup your environment
 
