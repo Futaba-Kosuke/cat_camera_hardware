@@ -1,18 +1,18 @@
-import os
+import os, sys
 import argparse
-import cv2
-import numpy as np
-import sys
 import time
-from threading import Thread
-import importlib.util
-import firebase_admin
-from firebase_admin import credentials, firestore, storage
 import datetime
 import platform
 import base64
-import requests
 import json
+import importlib.util
+from threading import Thread
+
+import numpy as np
+import cv2
+import requests
+import firebase_admin
+from firebase_admin import credentials, firestore, storage
 
 class VideoStream:
     
