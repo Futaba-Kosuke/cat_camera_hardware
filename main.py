@@ -81,10 +81,10 @@ def numpy_to_base64(img_np):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--modeldir', help='model\'s path', default='models')
-    parser.add_argument('--display', help='flag\'s window', default=True)
+    parser.add_argument('-m', '--modeldir', help='model\'s path', default='models')
+    parser.add_argument('-d', '--display', help='flag\'s window', action='store_false')
     parser.add_argument('-w', '--wait', help='waiting time [sec]', default=5)
-    parser.add_argument('-s', '--server', default=True)
+    parser.add_argument('-s', '--server', action='store_false')
 
     args = parser.parse_args()
     
