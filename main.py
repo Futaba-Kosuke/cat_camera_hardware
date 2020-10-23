@@ -10,6 +10,9 @@ import firebase_admin
 from firebase_admin import credentials, firestore, storage
 import datetime
 import platform
+import base64
+import requests
+import json
 
 class VideoStream:
     
@@ -68,17 +71,28 @@ class Firebase:
             'postTime': datetime.datetime.now()
         })
 
+        os.remove(file_path)
+
+def numpy_to_base64(img_np):
+    # numpyをbase64に変換
+    _, temp = cv2.imencode('.jpeg', img_np)
+    img_base64 = base64.b64encode(temp)
+    return img_base64
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--modeldir', help='model\'s path', default='models')
     parser.add_argument('--display', help='flag\'s window', default=True)
     parser.add_argument('-w', '--wait', help='waiting time [sec]', default=5)
+    parser.add_argument('-s', '--server', default=True)
 
     args = parser.parse_args()
     
     MODEL_NAME = args.modeldir
     IS_DISPLAY = args.display
     WAITING_SEC = float(args.wait)
+    IS_SERVER = args.server
+
     GRAPH_NAME = 'detect.tflite'
     LABELMAP_NAME = 'labelmap.txt'
     min_conf_threshold = float(0.5)
@@ -155,8 +169,15 @@ if __name__ == '__main__':
         if ('cat' in labels_valid) and ('person' in labels_valid) and (now_time - prev_time > WAITING_SEC):
             print('cat_and_person')
             file_name = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-            cv2.imwrite('./firebase/{}.jpeg'.format(file_name), frame)
-            Thread(target=firebase.upload_file, kwargs={ 'file_path': './firebase/{}.jpeg'.format(file_name) }).start()
+
+            if IS_SERVER:
+                frame_base64 = numpy_to_base64(frame)
+                Thread(target=requests.post, args=('http://127.0.0.1:5000/upload', { 'img_base64': frame_base64 })).start()
+            else:
+                file_path = './firebase/{}.jpeg'.format(file_name)
+                cv2.imwrite(file_path, frame)
+                Thread(target=firebase.upload_file, kwargs={ 'file_path': './firebase/{}.jpeg'.format(file_name) }).start()
+
             # 時間の更新
             prev_time = now_time
     
