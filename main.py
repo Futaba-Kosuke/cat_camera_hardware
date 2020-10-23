@@ -71,6 +71,8 @@ class Firebase:
             'postTime': datetime.datetime.now()
         })
 
+        os.remove(file_path)
+
 def numpy_to_base64(img_np):
     # numpyをbase64に変換
     _, temp = cv2.imencode('.jpeg', img_np)
@@ -172,7 +174,8 @@ if __name__ == '__main__':
                 frame_base64 = numpy_to_base64(frame)
                 Thread(target=requests.post, args=('http://127.0.0.1:5000/upload', { 'img_base64': frame_base64 })).start()
             else:
-                cv2.imwrite('./firebase/{}.jpeg'.format(file_name), frame)
+                file_path = './firebase/{}.jpeg'.format(file_name)
+                cv2.imwrite(file_path, frame)
                 Thread(target=firebase.upload_file, kwargs={ 'file_path': './firebase/{}.jpeg'.format(file_name) }).start()
 
             # 時間の更新
