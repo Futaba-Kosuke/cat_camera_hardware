@@ -11,67 +11,9 @@ from threading import Thread
 import numpy as np
 import cv2
 import requests
-import firebase_admin
-from firebase_admin import credentials, firestore, storage
 
-class VideoStream:
-    
-    def __init__(self, resolution=(640, 480), framerate=30):
-        self.stream = cv2.VideoCapture(0)
-
-        self.stream.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
-        self.stream.set(3, resolution[0])
-        self.stream.set(4, resolution[1])
-
-        self.grabbed, self.frame = self.stream.read()
-
-        self.stopped = False
-
-    def start(self):
-        Thread(target=self.update, args=()).start()
-        return self
-
-    def update(self):
-        while True:
-            if self.stopped:
-                self.stream.release()
-                return
-
-            self.grabbed, self.frame = self.stream.read()
-
-    def read(self):
-        return self.frame
-
-    def stop(self):
-        self.stopped = True
-
-class Firebase:
-
-    def __init__(self, cred_path='./firebase/cred.json', bucket_name='cat-camera-cafe8.appspot.com'):
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred, {'storageBucket': bucket_name})
-
-        self.bucket_name = bucket_name
-        self.bucket = storage.bucket()
-
-        self.db = firestore.client()
-
-    def upload_file(self, file_path='./firebase/image.jpeg', content_type='image/jpeg', meta_data={'from': platform.system()}):
-        blob = self.bucket.blob(file_path.split('/')[-1])
-        with open(file_path, 'rb') as f:
-            blob.upload_from_file(f, content_type=content_type)
-        blob.metadata = meta_data
-        blob.patch()
-
-        blob.make_public()
-        url = blob.public_url
-        self.db.collection("images").add({
-            'isFavorite': False,
-            'url': url,
-            'postTime': datetime.datetime.now()
-        })
-
-        os.remove(file_path)
+from video.video import VideoStream
+from firebase.firebase import Firebase
 
 def numpy_to_base64(img_np):
     # numpyをbase64に変換
