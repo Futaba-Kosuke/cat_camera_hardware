@@ -123,8 +123,31 @@ def main():
 
             file_name = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
             if IS_SERVER:
-                frame_base64 = numpy_to_base64(frame)
-                Thread(target=requests.post, args=('http://127.0.0.1:5000/upload', { 'img_base64': frame_base64 })).start()
+                frame_base64 = numpy_to_base64(frame).decode('utf-8')
+
+                cat_idx = [i for i, x in enumerate(labels_valid) if x == 'cat']
+                cat_boxes = [{}] * len(cat_idx)
+                for i, x in enumerate(cat_idx):
+                    x_min, x_max = int(max(1, (boxes[x][1] * FRAME_SIZE[0]))), int(min(FRAME_SIZE[0], (boxes[x][3] * FRAME_SIZE[0])))
+                    y_min, y_max = int(max(1, (boxes[x][0] * FRAME_SIZE[1]))), int(min(FRAME_SIZE[1], (boxes[x][2] * FRAME_SIZE[1])))
+                    box = {
+                        'x_min': str(x_min),
+                        'x_max': str(x_max),
+                        'y_min': str(y_min),
+                        'y_max': str(y_max)
+                    }
+                    cat_boxes[i] = box;
+
+                payload = {
+                    'img_base64': frame_base64,
+                    'cat_boxes': cat_boxes
+                }
+                print(payload)
+                payload = json.dumps(payload).encode('utf-8')
+
+                headers = { 'Content-Type': 'application/json' }
+
+                Thread(target=requests.post, args=('http://127.0.0.1:5000/upload', ), kwargs={ 'headers': headers, 'data': payload }).start()
             else:
                 file_path = './firebase/{}.jpeg'.format(file_name)
                 cv2.imwrite(file_path, frame)
